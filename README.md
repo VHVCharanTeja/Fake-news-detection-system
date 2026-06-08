@@ -159,17 +159,36 @@ Open your browser at: **http://localhost:5000**
 
 ## 📸 Screenshots
 
-| Page | Description |
-|---|---|
-| Home / Detector | Paste any article and get an instant Fake/Real verdict |
-| Result Panel | Shows verdict, confidence %, model name, and timestamp |
-| Analytics Dashboard | KPI cards, Chart.js plots, EDA visualisations |
-| Model Comparison Table | Accuracy, Precision, Recall, F1 for all 3 models |
-| Prediction History | Every prediction stored with timestamp and confidence |
+### 🏠 Home Page
 
-> *Screenshots will be added after the application is running.*
+![Home Page](screenshots/homepage.png)
+
+The main interface where users can enter a news article or headline for analysis.
 
 ---
+
+### ✅ Real News Prediction
+
+![Real News Prediction](screenshots/real_prediction.png)
+
+Example showing a news article classified as REAL along with the confidence score and model details.
+
+---
+
+### ❌ Fake News Prediction
+
+![Fake News Prediction](screenshots/fake_prediction.png)
+
+Example showing a news article classified as FAKE along with the confidence score and prediction details.
+
+---
+
+### 📊 Analytics Dashboard
+
+![Dashboard](screenshots/dashboard.png)
+
+Interactive dashboard displaying prediction statistics, model performance metrics, and visual analytics.
+
 
 ## 🔬 ML Pipeline — Phase by Phase
 
@@ -243,9 +262,35 @@ Pull requests are welcome. For major changes, please open an issue first.
 
 ## 👤 Author
 
-Built as an intermediate AI/ML project demonstrating end-to-end NLP + Flask development skills.
+### V H V Charan Teja
 
-**Stack Highlights:** Python · Flask · Scikit-learn · NLTK · TF-IDF · Bootstrap 5 · Chart.js
+🎓 B.Tech – Artificial Intelligence and Machine Learning
+
+🏫 Sathyabama Institute of Science and Technology
+
+💡 Areas of Interest:
+
+* Artificial Intelligence
+* Machine Learning
+* Deep Learning
+* Natural Language Processing
+* Computer Vision
+
+🔗 GitHub:
+https://github.com/VHVCharanTeja
+
+📧 Email:
+[verellahvcteja@gmail.com](mailto:verellahvcteja@gmail.com)
+
+### Projects
+
+* Fake News Detection System
+* AI Art Generator
+* Deep Learning Enabled Vehicle Detection and Speed Measurement
+
+---
+
+⭐ If you found this project useful, consider giving it a star on GitHub.
 
 
 ## Dataset
