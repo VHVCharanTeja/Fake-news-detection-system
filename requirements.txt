@@ -1,0 +1,26 @@
+# ─────────────────────────────────────────────
+# Fake News Detection — Python Dependencies
+# Compatible with Python 3.10+
+# Install: pip install -r requirements.txt
+# ─────────────────────────────────────────────
+
+# Web Framework
+flask==3.0.3
+
+# Machine Learning
+scikit-learn==1.5.1
+numpy==1.26.4
+pandas==2.2.2
+joblib==1.4.2
+
+# NLP
+nltk==3.8.1
+
+# Visualisation & EDA
+matplotlib==3.9.1
+seaborn==0.13.2
+wordcloud==1.9.3
+Pillow==10.4.0
+
+# Utilities
+python-dotenv==1.0.1

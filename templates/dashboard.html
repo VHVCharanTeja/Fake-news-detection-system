@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TruthLens — Analytics Dashboard</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root {
+      --bg-deep:     #0b0c10;
+      --bg-card:     #111318;
+      --bg-card2:    #181c24;
+      --border:      #242836;
+      --accent-red:  #e8394d;
+      --accent-green:#22c55e;
+      --accent-blue: #3b82f6;
+      --accent-amber:#f59e0b;
+      --accent-purple:#a78bfa;
+      --text-primary:#eef0f4;
+      --text-muted:  #8b93a7;
+      --font-head:   'Bebas Neue', sans-serif;
+      --font-body:   'DM Sans', sans-serif;
+      --font-mono:   'DM Mono', monospace;
+      --radius:      12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-deep);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(59,130,246,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── NAVBAR ── */
+    .navbar {
+      background: rgba(11,12,16,.92);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border);
+      padding: .75rem 0;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .navbar-brand {
+      font-family: var(--font-head);
+      font-size: 1.9rem;
+      letter-spacing: 2px;
+      color: var(--text-primary) !important;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    .brand-dot {
+      width: 10px; height: 10px;
+      background: var(--accent-red);
+      border-radius: 50%;
+      display: inline-block;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(232,57,77,.6); }
+      50%      { box-shadow: 0 0 0 6px rgba(232,57,77,0); }
+    }
+
+    .nav-link {
+      color: var(--text-muted) !important;
+      font-weight: 500;
+      font-size: .9rem;
+      transition: color .2s;
+      padding: .5rem 1rem !important;
+    }
+
+    .nav-link:hover, .nav-link.active { color: var(--text-primary) !important; }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      padding: 3rem 0 2rem;
+      position: relative;
+    }
+
+    .page-header::after {
+      content: "";
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+    }
+
+    .page-eyebrow {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent-blue);
+      margin-bottom: .75rem;
+    }
+
+    .page-title {
+      font-family: var(--font-head);
+      font-size: clamp(2.5rem, 5vw, 4rem);
+      letter-spacing: 4px;
+      line-height: 1;
+    }
+
+    .page-title span { color: var(--accent-blue); }
+
+    /* ── KPI CARDS ── */
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      transition: border-color .3s, transform .3s;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-3px);
+    }
+
+    .kpi-card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0;
+      width: 3px;
+      height: 100%;
+    }
+
+    .kpi-card.total::before    { background: var(--accent-blue); }
+    .kpi-card.fake-kpi::before { background: var(--accent-red); }
+    .kpi-card.real-kpi::before { background: var(--accent-green); }
+    .kpi-card.conf-kpi::before { background: var(--accent-amber); }
+
+    .kpi-label {
+      font-family: var(--font-mono);
+      font-size: .72rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: .5rem;
+    }
+
+    .kpi-value {
+      font-family: var(--font-head);
+      font-size: 2.8rem;
+      line-height: 1;
+      letter-spacing: 2px;
+    }
+
+    .kpi-card.total    .kpi-value { color: var(--accent-blue); }
+    .kpi-card.fake-kpi .kpi-value { color: var(--accent-red); }
+    .kpi-card.real-kpi .kpi-value { color: var(--accent-green); }
+    .kpi-card.conf-kpi .kpi-value { color: var(--accent-amber); }
+
+    .kpi-sub {
+      font-size: .8rem;
+      color: var(--text-muted);
+      margin-top: .4rem;
+    }
+
+    .kpi-icon {
+      position: absolute;
+      right: 1.25rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 2rem;
+      opacity: .08;
+    }
+
+    /* ── CHART CARDS ── */
+    .chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+    }
+
+    .chart-title {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    .chart-title span { color: var(--text-primary); font-size: .8rem; }
+
+    canvas { max-width: 100%; }
+
+    /* ── MODEL TABLE ── */
+    .model-table-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+    }
+
+    .model-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .85rem;
+    }
+
+    .model-table th {
+      font-family: var(--font-mono);
+      font-size: .72rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: .6rem .75rem;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .model-table th:first-child { text-align: left; }
+
+    .model-table td {
+      padding: .75rem .75rem;
+      border-bottom: 1px solid rgba(36,40,54,.5);
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .model-table td:first-child { text-align: left; font-weight: 500; }
+    .model-table tr:last-child td { border-bottom: none; }
+    .model-table tr:hover td { background: rgba(255,255,255,.02); }
+
+    .score-val {
+      font-family: var(--font-mono);
+      font-size: .83rem;
+    }
+
+    .score-bar-wrap {
+      height: 5px;
+      background: rgba(255,255,255,.06);
+      border-radius: 50px;
+      overflow: hidden;
+      margin-top: 3px;
+      width: 80px;
+      display: inline-block;
+    }
+
+    .score-bar-fill {
+      height: 100%;
+      border-radius: 50px;
+      background: var(--accent-blue);
+    }
+
+    .badge-best-model {
+      font-size: .65rem;
+      background: rgba(34,197,94,.12);
+      color: var(--accent-green);
+      border: 1px solid rgba(34,197,94,.3);
+      border-radius: 4px;
+      padding: 1px 6px;
+      margin-left: 5px;
+      vertical-align: middle;
+    }
+
+    /* ── EDA IMAGES ── */
+    .eda-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color .3s, transform .3s;
+    }
+
+    .eda-card:hover {
+      border-color: rgba(59,130,246,.3);
+      transform: translateY(-3px);
+    }
+
+    .eda-card img {
+      width: 100%;
+      height: 240px;
+      object-fit: cover;
+      display: block;
+      background: var(--bg-card2);
+    }
+
+    .eda-card-body {
+      padding: .9rem 1rem;
+    }
+
+    .eda-card-title {
+      font-family: var(--font-mono);
+      font-size: .72rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .eda-placeholder {
+      width: 100%;
+      height: 240px;
+      background: var(--bg-card2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: .85rem;
+      gap: .5rem;
+    }
+
+    /* ── HISTORY TABLE ── */
+    .history-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+    }
+
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .82rem;
+    }
+
+    .history-table th {
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: .5rem .75rem;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+
+    .history-table td {
+      padding: .65rem .75rem;
+      border-bottom: 1px solid rgba(36,40,54,.4);
+      color: var(--text-primary);
+      vertical-align: middle;
+    }
+
+    .history-table tr:last-child td { border-bottom: none; }
+    .history-table tr:hover td { background: rgba(255,255,255,.02); }
+
+    .badge-fake {
+      background: rgba(232,57,77,.15);
+      color: var(--accent-red);
+      border: 1px solid rgba(232,57,77,.3);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: .73rem;
+      font-family: var(--font-mono);
+    }
+
+    .badge-real {
+      background: rgba(34,197,94,.15);
+      color: var(--accent-green);
+      border: 1px solid rgba(34,197,94,.3);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: .73rem;
+      font-family: var(--font-mono);
+    }
+
+    .snippet-text {
+      max-width: 280px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text-muted);
+      font-size: .78rem;
+    }
+
+    /* ── SECTION HEADERS ── */
+    .section-head {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .section-head h2 {
+      font-family: var(--font-head);
+      font-size: 1.7rem;
+      letter-spacing: 3px;
+      color: var(--text-primary);
+    }
+
+    .section-head .line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 0;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: .82rem;
+      margin-top: 4rem;
+    }
+
+    footer a { color: var(--accent-blue); text-decoration: none; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 767px) {
+      .kpi-value { font-size: 2rem; }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ══════════════════════════════════════
+       NAVBAR
+  ══════════════════════════════════════ -->
+  <nav class="navbar navbar-expand-lg">
+    <div class="container">
+      <a class="navbar-brand" href="/">
+        <span class="brand-dot"></span>
+        TRUTHLENS
+      </a>
+      <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+        <i class="bi bi-list text-white fs-4"></i>
+      </button>
+      <div class="collapse navbar-collapse" id="navMenu">
+        <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
+          <li class="nav-item">
+            <a class="nav-link" href="/"><i class="bi bi-search me-1"></i>Detector</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="/dashboard"><i class="bi bi-bar-chart-line me-1"></i>Dashboard</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════════
+       PAGE HEADER
+  ══════════════════════════════════════ -->
+  <div class="page-header">
+    <div class="container">
+      <p class="page-eyebrow"><i class="bi bi-bar-chart-fill me-2"></i>Analytics &amp; Model Intelligence</p>
+      <h1 class="page-title">ANALYTICS <span>DASHBOARD</span></h1>
+      <p style="color:var(--text-muted);margin-top:.75rem;font-size:.9rem;">
+        Real-time model performance, EDA visualisations, and prediction statistics.
+        <strong style="color:var(--text-primary);">Best model: {{ best_model_name }}</strong>
+      </p>
+    </div>
+  </div>
+
+  <main class="container py-4 position-relative">
+
+    <!-- ══════════════════════════════════════
+         KPI CARDS
+    ══════════════════════════════════════ -->
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-md-3">
+        <div class="kpi-card total">
+          <div class="kpi-label"><i class="bi bi-collection me-1"></i>Total Predictions</div>
+          <div class="kpi-value">{{ stats.total }}</div>
+          <div class="kpi-sub">Since server started</div>
+          <i class="bi bi-collection kpi-icon"></i>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="kpi-card fake-kpi">
+          <div class="kpi-label"><i class="bi bi-shield-x me-1"></i>Fake Detected</div>
+          <div class="kpi-value">{{ stats.fake }}</div>
+          <div class="kpi-sub">{{ stats.fake_pct }}% of total</div>
+          <i class="bi bi-exclamation-triangle kpi-icon"></i>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="kpi-card real-kpi">
+          <div class="kpi-label"><i class="bi bi-shield-check me-1"></i>Real Verified</div>
+          <div class="kpi-value">{{ stats.real }}</div>
+          <div class="kpi-sub">{{ stats.real_pct }}% of total</div>
+          <i class="bi bi-check-circle kpi-icon"></i>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="kpi-card conf-kpi">
+          <div class="kpi-label"><i class="bi bi-speedometer2 me-1"></i>Avg Confidence</div>
+          <div class="kpi-value">{{ stats.avg_conf }}%</div>
+          <div class="kpi-sub">Across all predictions</div>
+          <i class="bi bi-speedometer2 kpi-icon"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         CHARTS ROW
+    ══════════════════════════════════════ -->
+    <div class="row g-4 mb-4">
+
+      <!-- Model Accuracy Bar Chart -->
+      <div class="col-lg-7">
+        <div class="chart-card h-100">
+          <p class="chart-title">
+            <i class="bi bi-bar-chart-fill" style="color:var(--accent-blue)"></i>
+            <span>Model Performance Comparison</span>
+          </p>
+          <canvas id="modelChart" height="260"></canvas>
+        </div>
+      </div>
+
+      <!-- Fake vs Real Doughnut -->
+      <div class="col-lg-5">
+        <div class="chart-card h-100">
+          <p class="chart-title">
+            <i class="bi bi-pie-chart-fill" style="color:var(--accent-red)"></i>
+            <span>Prediction Distribution</span>
+          </p>
+          <canvas id="distChart" height="260"></canvas>
+          {% if stats.total == 0 %}
+          <p class="text-center mt-3" style="color:var(--text-muted);font-size:.85rem;">
+            No predictions yet. Go to the <a href="/" style="color:var(--accent-blue)">Detector</a> to start analysing news.
+          </p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         MODEL COMPARISON TABLE
+    ══════════════════════════════════════ -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="model-table-card">
+          <div class="section-head">
+            <h2>MODEL COMPARISON</h2>
+            <div class="line"></div>
+          </div>
+
+          {% if metrics %}
+          <div class="table-responsive">
+            <table class="model-table">
+              <thead>
+                <tr>
+                  <th>Model</th>
+                  <th>Accuracy %</th>
+                  <th>Precision %</th>
+                  <th>Recall %</th>
+                  <th>F1 Score %</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for m in metrics %}
+                <tr>
+                  <td>
+                    <strong>{{ m.model }}</strong>
+                    {% if m.model == best_model_name %}
+                    <span class="badge-best-model">★ BEST</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <div class="score-val">{{ m.accuracy }}%</div>
+                    <div><span class="score-bar-wrap"><span class="score-bar-fill" style="width:{{ m.accuracy }}%;background:var(--accent-blue)"></span></span></div>
+                  </td>
+                  <td>
+                    <div class="score-val">{{ m.precision }}%</div>
+                    <div><span class="score-bar-wrap"><span class="score-bar-fill" style="width:{{ m.precision }}%;background:var(--accent-purple)"></span></span></div>
+                  </td>
+                  <td>
+                    <div class="score-val">{{ m.recall }}%</div>
+                    <div><span class="score-bar-wrap"><span class="score-bar-fill" style="width:{{ m.recall }}%;background:var(--accent-amber)"></span></span></div>
+                  </td>
+                  <td>
+                    <div class="score-val">{{ m.f1 }}%</div>
+                    <div><span class="score-bar-wrap"><span class="score-bar-fill" style="width:{{ m.f1 }}%;background:var(--accent-green)"></span></span></div>
+                  </td>
+                  <td>
+                    {% if m.model == best_model_name %}
+                    <span style="color:var(--accent-green);font-size:.82rem;"><i class="bi bi-check-circle-fill me-1"></i>Deployed</span>
+                    {% else %}
+                    <span style="color:var(--text-muted);font-size:.82rem;"><i class="bi bi-circle me-1"></i>Trained</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-4">
+            <i class="bi bi-exclamation-circle fs-2 mb-2" style="color:var(--text-muted)"></i>
+            <p style="color:var(--text-muted);">No model metrics found. Run <code style="color:var(--accent-amber)">python train.py</code> first.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         EDA VISUALISATIONS
+    ══════════════════════════════════════ -->
+    <div class="section-head mb-3">
+      <h2>EDA VISUALISATIONS</h2>
+      <div class="line"></div>
+    </div>
+
+    <div class="row g-4 mb-4">
+
+      <!-- Label Distribution -->
+      <div class="col-md-6 col-lg-4">
+        <div class="eda-card">
+          {% if images.label_dist %}
+          <img src="/static/images/label_distribution.png" alt="Label Distribution" loading="lazy"/>
+          {% else %}
+          <div class="eda-placeholder"><i class="bi bi-image fs-3"></i><span>Run train.py to generate</span></div>
+          {% endif %}
+          <div class="eda-card-body">
+            <p class="eda-card-title"><i class="bi bi-bar-chart me-1"></i>Fake vs Real Distribution</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Article Length -->
+      <div class="col-md-6 col-lg-4">
+        <div class="eda-card">
+          {% if images.article_len %}
+          <img src="/static/images/article_length.png" alt="Article Length" loading="lazy"/>
+          {% else %}
+          <div class="eda-placeholder"><i class="bi bi-image fs-3"></i><span>Run train.py to generate</span></div>
+          {% endif %}
+          <div class="eda-card-body">
+            <p class="eda-card-title"><i class="bi bi-rulers me-1"></i>Article Length Distribution</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Words -->
+      <div class="col-md-6 col-lg-4">
+        <div class="eda-card">
+          {% if images.top_words %}
+          <img src="/static/images/top_words.png" alt="Top Words" loading="lazy"/>
+          {% else %}
+          <div class="eda-placeholder"><i class="bi bi-image fs-3"></i><span>Run train.py to generate</span></div>
+          {% endif %}
+          <div class="eda-card-body">
+            <p class="eda-card-title"><i class="bi bi-sort-down me-1"></i>Most Common Words</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Word Cloud Fake -->
+      <div class="col-md-6 col-lg-6">
+        <div class="eda-card">
+          {% if images.wc_fake %}
+          <img src="/static/images/wordcloud_fake.png" alt="Fake News Word Cloud" loading="lazy"
+               style="height:280px;"/>
+          {% else %}
+          <div class="eda-placeholder" style="height:280px;"><i class="bi bi-image fs-3"></i><span>Run train.py to generate</span></div>
+          {% endif %}
+          <div class="eda-card-body">
+            <p class="eda-card-title"><i class="bi bi-cloud me-1" style="color:var(--accent-red)"></i>Word Cloud — Fake News</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Word Cloud Real -->
+      <div class="col-md-6 col-lg-6">
+        <div class="eda-card">
+          {% if images.wc_real %}
+          <img src="/static/images/wordcloud_real.png" alt="Real News Word Cloud" loading="lazy"
+               style="height:280px;"/>
+          {% else %}
+          <div class="eda-placeholder" style="height:280px;"><i class="bi bi-image fs-3"></i><span>Run train.py to generate</span></div>
+          {% endif %}
+          <div class="eda-card-body">
+            <p class="eda-card-title"><i class="bi bi-cloud me-1" style="color:var(--accent-green)"></i>Word Cloud — Real News</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Model Comparison image (from matplotlib) -->
+      {% if images.model_compare %}
+      <div class="col-12">
+        <div class="eda-card">
+          <img src="/static/images/model_comparison.png" alt="Model Comparison Chart" loading="lazy"
+               style="height:auto;max-height:380px;object-fit:contain;"/>
+          <div class="eda-card-body">
+            <p class="eda-card-title"><i class="bi bi-graph-up me-1"></i>Model Metric Comparison (Generated during training)</p>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PREDICTION HISTORY
+    ══════════════════════════════════════ -->
+    <div class="section-head mb-3">
+      <h2>PREDICTION HISTORY</h2>
+      <div class="line"></div>
+    </div>
+
+    <div class="history-card mb-5">
+      {% if history %}
+      <div class="table-responsive">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>News Snippet</th>
+              <th>Result</th>
+              <th>Confidence</th>
+              <th>Model</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in history %}
+            <tr>
+              <td>
+                <span style="font-family:var(--font-mono);color:var(--text-muted);font-size:.75rem;">
+                  #{{ item.id }}
+                </span>
+              </td>
+              <td>
+                <div class="snippet-text" title="{{ item.snippet }}">{{ item.snippet }}</div>
+              </td>
+              <td>
+                {% if item.prediction == 'FAKE' %}
+                <span class="badge-fake">⚠ FAKE</span>
+                {% else %}
+                <span class="badge-real">✓ REAL</span>
+                {% endif %}
+              </td>
+              <td>
+                <span style="font-family:var(--font-mono);font-size:.8rem;">{{ item.confidence }}%</span>
+              </td>
+              <td>
+                <span style="color:var(--text-muted);font-size:.78rem;">{{ item.model_used }}</span>
+              </td>
+              <td>
+                <span style="color:var(--text-muted);font-size:.75rem;white-space:nowrap;">{{ item.timestamp }}</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-5">
+        <i class="bi bi-clock-history fs-2 mb-3 d-block" style="color:var(--text-muted)"></i>
+        <p style="color:var(--text-muted);">No predictions yet.</p>
+        <a href="/" class="btn btn-sm mt-2"
+           style="background:var(--accent-blue);color:#fff;border:none;border-radius:6px;padding:.45rem 1.25rem;">
+          <i class="bi bi-search me-1"></i>Start Detecting
+        </a>
+      </div>
+      {% endif %}
+    </div>
+
+  </main>
+
+  <!-- ══════════════════════════════════════
+       FOOTER
+  ══════════════════════════════════════ -->
+  <footer>
+    <div class="container">
+      <p>
+        <strong>TruthLens</strong> — Fake News Detection System &nbsp;|&nbsp;
+        Built with Python, Flask, Scikit-learn &amp; Bootstrap 5 &nbsp;|&nbsp;
+        <a href="/"><i class="bi bi-search me-1"></i>Back to Detector</a>
+      </p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // ── Chart.js global defaults ──
+    Chart.defaults.color = "#8b93a7";
+    Chart.defaults.borderColor = "#242836";
+    Chart.defaults.font.family = "'DM Sans', sans-serif";
+
+    const DARK_BG  = "#111318";
+
+    // ══════════════════════════════════════
+    // 1. Model Accuracy Bar Chart
+    // ══════════════════════════════════════
+    (function() {
+      const ctx = document.getElementById("modelChart");
+      if (!ctx) return;
+
+      const metrics = {{ metrics | tojson }};
+      if (!metrics || metrics.length === 0) return;
+
+      const labels  = metrics.map(m => m.model);
+      const accData = metrics.map(m => m.accuracy);
+      const precData= metrics.map(m => m.precision);
+      const recData = metrics.map(m => m.recall);
+      const f1Data  = metrics.map(m => m.f1);
+
+      new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [
+            { label: "Accuracy",  data: accData,  backgroundColor: "rgba(59,130,246,.75)",  borderRadius: 5 },
+            { label: "Precision", data: precData, backgroundColor: "rgba(167,139,250,.75)", borderRadius: 5 },
+            { label: "Recall",    data: recData,  backgroundColor: "rgba(245,158,11,.75)",  borderRadius: 5 },
+            { label: "F1 Score",  data: f1Data,   backgroundColor: "rgba(34,197,94,.75)",   borderRadius: 5 },
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: "top", labels: { usePointStyle: true, padding: 16 } },
+            tooltip: {
+              callbacks: {
+                label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}%`
+              }
+            }
+          },
+          scales: {
+            x: { grid: { color: "#242836" }, ticks: { font: { size: 11 } } },
+            y: {
+              min: 85, max: 100,
+              grid: { color: "#242836" },
+              ticks: { callback: v => v + "%" }
+            }
+          }
+        }
+      });
+    })();
+
+    // ══════════════════════════════════════
+    // 2. Prediction Distribution Doughnut
+    // ══════════════════════════════════════
+    (function() {
+      const ctx = document.getElementById("distChart");
+      if (!ctx) return;
+
+      const fake  = {{ stats.fake }};
+      const real  = {{ stats.real }};
+      const total = fake + real;
+
+      if (total === 0) return;
+
+      new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: ["Fake News", "Real News"],
+          datasets: [{
+            data: [fake, real],
+            backgroundColor: ["rgba(232,57,77,.8)", "rgba(34,197,94,.8)"],
+            borderColor:     ["#e8394d", "#22c55e"],
+            borderWidth: 1.5,
+            hoverOffset: 8,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: "65%",
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: { usePointStyle: true, padding: 20, font: { size: 12 } }
+            },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const pct = ((ctx.parsed / total) * 100).toFixed(1);
+                  return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

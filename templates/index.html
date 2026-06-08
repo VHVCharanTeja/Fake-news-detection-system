@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TruthLens — Fake News Detector</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+
+  <style>
+    /* ═══════════════════════════════════════
+       CSS VARIABLES
+    ═══════════════════════════════════════ */
+    :root {
+      --bg-deep:     #0b0c10;
+      --bg-card:     #111318;
+      --bg-card2:    #181c24;
+      --border:      #242836;
+      --accent-red:  #e8394d;
+      --accent-green:#22c55e;
+      --accent-blue: #3b82f6;
+      --accent-amber:#f59e0b;
+      --text-primary:#eef0f4;
+      --text-muted:  #8b93a7;
+      --font-head:   'Bebas Neue', sans-serif;
+      --font-body:   'DM Sans', sans-serif;
+      --font-mono:   'DM Mono', monospace;
+      --radius:      12px;
+      --glow-red:    0 0 24px rgba(232,57,77,0.25);
+      --glow-green:  0 0 24px rgba(34,197,94,0.25);
+    }
+
+    /* ═══════════════════════════════════════
+       BASE
+    ═══════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-deep);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.65;
+      min-height: 100vh;
+    }
+
+    /* subtle grid texture */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(59,130,246,.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ═══════════════════════════════════════
+       NAVBAR
+    ═══════════════════════════════════════ */
+    .navbar {
+      background: rgba(11,12,16,.92);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 0;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .navbar-brand {
+      font-family: var(--font-head);
+      font-size: 1.9rem;
+      letter-spacing: 2px;
+      color: var(--text-primary) !important;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .brand-dot {
+      width: 10px; height: 10px;
+      background: var(--accent-red);
+      border-radius: 50%;
+      display: inline-block;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(232,57,77,.6); }
+      50%      { box-shadow: 0 0 0 6px rgba(232,57,77,0); }
+    }
+
+    .nav-link {
+      color: var(--text-muted) !important;
+      font-weight: 500;
+      font-size: .9rem;
+      letter-spacing: .5px;
+      transition: color .2s;
+      padding: .5rem 1rem !important;
+    }
+    .nav-link:hover, .nav-link.active { color: var(--text-primary) !important; }
+
+    .nav-badge {
+      font-family: var(--font-mono);
+      font-size: .72rem;
+      background: var(--bg-card2);
+      border: 1px solid var(--border);
+      color: var(--accent-blue);
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+
+    /* ═══════════════════════════════════════
+       HERO
+    ═══════════════════════════════════════ */
+    .hero {
+      position: relative;
+      padding: 5rem 0 3.5rem;
+      overflow: hidden;
+      text-align: center;
+    }
+
+    .hero-glow {
+      position: absolute;
+      top: -120px; left: 50%;
+      transform: translateX(-50%);
+      width: 700px; height: 400px;
+      background: radial-gradient(ellipse at center,
+        rgba(232,57,77,.14) 0%,
+        transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-eyebrow {
+      font-family: var(--font-mono);
+      font-size: .78rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent-red);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+    }
+
+    .hero-eyebrow::before, .hero-eyebrow::after {
+      content: "";
+      flex: 1 1 60px;
+      max-width: 80px;
+      height: 1px;
+      background: var(--accent-red);
+      opacity: .4;
+    }
+
+    .hero h1 {
+      font-family: var(--font-head);
+      font-size: clamp(3rem, 8vw, 5.5rem);
+      letter-spacing: 4px;
+      line-height: 1.05;
+      color: var(--text-primary);
+      margin-bottom: 1.2rem;
+    }
+
+    .hero h1 span { color: var(--accent-red); }
+
+    .hero-sub {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      max-width: 520px;
+      margin: 0 auto 2.5rem;
+    }
+
+    /* ═══════════════════════════════════════
+       STAT PILLS
+    ═══════════════════════════════════════ */
+    .stat-pills {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: .75rem;
+      margin-bottom: 3rem;
+    }
+
+    .stat-pill {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: .45rem 1.1rem;
+      font-size: .85rem;
+    }
+
+    .stat-pill .pill-val {
+      font-family: var(--font-mono);
+      font-size: .92rem;
+      font-weight: 500;
+    }
+
+    .pill-green  { color: var(--accent-green); }
+    .pill-blue   { color: var(--accent-blue); }
+    .pill-amber  { color: var(--accent-amber); }
+
+    /* ═══════════════════════════════════════
+       PREDICTION CARD
+    ═══════════════════════════════════════ */
+    .predict-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      transition: border-color .3s;
+    }
+
+    .predict-card:focus-within {
+      border-color: rgba(59,130,246,.4);
+    }
+
+    .card-label {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: .75rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    .news-textarea {
+      width: 100%;
+      min-height: 200px;
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: .95rem;
+      padding: 1rem;
+      resize: vertical;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    .news-textarea:focus {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+    }
+
+    .news-textarea::placeholder { color: var(--text-muted); opacity: .7; }
+
+    .char-counter {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      color: var(--text-muted);
+      text-align: right;
+      margin-top: .4rem;
+    }
+
+    .char-counter.warn { color: var(--accent-amber); }
+    .char-counter.over { color: var(--accent-red); }
+
+    .btn-analyze {
+      background: var(--accent-red);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: .85rem 2.5rem;
+      font-family: var(--font-head);
+      font-size: 1.15rem;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: background .2s, transform .1s, box-shadow .2s;
+      display: inline-flex;
+      align-items: center;
+      gap: .6rem;
+    }
+
+    .btn-analyze:hover {
+      background: #c92d3f;
+      box-shadow: var(--glow-red);
+      transform: translateY(-1px);
+    }
+
+    .btn-analyze:active { transform: translateY(0); }
+
+    .btn-analyze:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ═══════════════════════════════════════
+       RESULT PANEL
+    ═══════════════════════════════════════ */
+    .result-panel {
+      border-radius: var(--radius);
+      border: 1px solid;
+      padding: 1.75rem 2rem;
+      animation: slideUp .35s cubic-bezier(.22,.68,0,1.2);
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-panel.fake {
+      background: rgba(232,57,77,.08);
+      border-color: rgba(232,57,77,.35);
+      box-shadow: var(--glow-red);
+    }
+
+    .result-panel.real {
+      background: rgba(34,197,94,.08);
+      border-color: rgba(34,197,94,.35);
+      box-shadow: var(--glow-green);
+    }
+
+    .result-verdict {
+      font-family: var(--font-head);
+      font-size: 3rem;
+      letter-spacing: 4px;
+      line-height: 1;
+    }
+
+    .result-panel.fake .result-verdict { color: var(--accent-red); }
+    .result-panel.real .result-verdict { color: var(--accent-green); }
+
+    .result-icon {
+      font-size: 2.8rem;
+      line-height: 1;
+    }
+
+    .confidence-bar-wrap {
+      background: rgba(255,255,255,.06);
+      border-radius: 50px;
+      height: 8px;
+      overflow: hidden;
+      margin-top: .5rem;
+    }
+
+    .confidence-bar {
+      height: 100%;
+      border-radius: 50px;
+      transition: width 1s cubic-bezier(.22,.68,0,1.2);
+    }
+
+    .result-panel.fake .confidence-bar { background: var(--accent-red); }
+    .result-panel.real .confidence-bar { background: var(--accent-green); }
+
+    .result-meta span {
+      font-family: var(--font-mono);
+      font-size: .78rem;
+      color: var(--text-muted);
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 3px 9px;
+    }
+
+    /* ═══════════════════════════════════════
+       ALERT / ERROR
+    ═══════════════════════════════════════ */
+    .alert-custom {
+      background: rgba(245,158,11,.08);
+      border: 1px solid rgba(245,158,11,.3);
+      border-radius: var(--radius);
+      color: var(--accent-amber);
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: flex-start;
+      gap: .75rem;
+      font-size: .9rem;
+      animation: slideUp .3s ease;
+    }
+
+    /* ═══════════════════════════════════════
+       MODEL NOT LOADED WARNING
+    ═══════════════════════════════════════ */
+    .model-warning {
+      background: rgba(59,130,246,.08);
+      border: 1px solid rgba(59,130,246,.3);
+      border-radius: var(--radius);
+      color: var(--accent-blue);
+      padding: 1.25rem 1.5rem;
+      font-size: .9rem;
+    }
+
+    .model-warning code {
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 2px 7px;
+      font-size: .85rem;
+      color: var(--accent-amber);
+    }
+
+    /* ═══════════════════════════════════════
+       SIDEBAR CARDS
+    ═══════════════════════════════════════ */
+    .side-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .side-card-title {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    /* model metrics table */
+    .metrics-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .82rem;
+    }
+
+    .metrics-table th {
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: .4rem .5rem;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .metrics-table td {
+      padding: .55rem .5rem;
+      border-bottom: 1px solid rgba(36,40,54,.6);
+      text-align: center;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: .8rem;    
+    }
+
+    .metrics-table tr:last-child td { border-bottom: none; }
+    .metrics-table td:first-child { text-align: left; font-family: var(--font-body); font-size: .83rem; }
+
+    .badge-best {
+      font-size: .65rem;
+      background: rgba(34,197,94,.15);
+      color: var(--accent-green);
+      border: 1px solid rgba(34,197,94,.3);
+      border-radius: 4px;
+      padding: 1px 5px;
+      margin-left: 4px;
+    }
+
+    /* ═══════════════════════════════════════
+       HISTORY TABLE
+    ═══════════════════════════════════════ */
+    .history-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .history-title {
+      font-family: var(--font-head);
+      font-size: 1.4rem;
+      letter-spacing: 2px;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .83rem;
+    }
+
+    .history-table th {
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: .5rem .75rem;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+
+    .history-table td {
+      padding: .65rem .75rem;
+      border-bottom: 1px solid rgba(36,40,54,.5);
+      color: var(--text-primary);
+      vertical-align: middle;
+    }
+
+    .history-table tr:last-child td { border-bottom: none; }
+
+    .history-table tr:hover td { background: rgba(255,255,255,.02); }
+
+    .badge-fake {
+      background: rgba(232,57,77,.15);
+      color: var(--accent-red);
+      border: 1px solid rgba(232,57,77,.35);
+      border-radius: 6px;
+      padding: 2px 9px;
+      font-size: .75rem;
+      font-family: var(--font-mono);
+      letter-spacing: .5px;
+    }
+
+    .badge-real {
+      background: rgba(34,197,94,.15);
+      color: var(--accent-green);
+      border: 1px solid rgba(34,197,94,.35);
+      border-radius: 6px;
+      padding: 2px 9px;
+      font-size: .75rem;
+      font-family: var(--font-mono);
+      letter-spacing: .5px;
+    }
+
+    .snippet-text {
+      max-width: 320px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text-muted);
+      font-size: .8rem;
+    }
+
+    .conf-val {
+      font-family: var(--font-mono);
+      font-size: .8rem;
+    }
+
+    /* ═══════════════════════════════════════
+       HOW IT WORKS
+    ═══════════════════════════════════════ */
+    .how-section {
+      margin-top: 3rem;
+      margin-bottom: 4rem;
+    }
+
+    .section-title {
+      font-family: var(--font-head);
+      font-size: 1.8rem;
+      letter-spacing: 3px;
+      text-align: center;
+      margin-bottom: 2rem;
+      color: var(--text-primary);
+    }
+
+    .step-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem 1.25rem;
+      text-align: center;
+      transition: border-color .3s, transform .3s;
+      height: 100%;
+    }
+
+    .step-card:hover {
+      border-color: rgba(59,130,246,.4);
+      transform: translateY(-4px);
+    }
+
+    .step-num {
+      font-family: var(--font-head);
+      font-size: 2.5rem;
+      color: var(--accent-red);
+      line-height: 1;
+      margin-bottom: .75rem;
+    }
+
+    .step-icon {
+      font-size: 1.8rem;
+      margin-bottom: .75rem;
+    }
+
+    .step-title {
+      font-weight: 600;
+      margin-bottom: .5rem;
+      font-size: .95rem;
+    }
+
+    .step-desc {
+      color: var(--text-muted);
+      font-size: .82rem;
+    }
+
+    /* ═══════════════════════════════════════
+       FOOTER
+    ═══════════════════════════════════════ */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 0;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: .82rem;
+    }
+
+    footer a { color: var(--accent-blue); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ═══════════════════════════════════════
+       SPINNER
+    ═══════════════════════════════════════ */
+    .spinner {
+      display: none;
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ═══════════════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════════════ */
+    @media (max-width: 767px) {
+      .hero h1 { font-size: 2.8rem; }
+      .result-verdict { font-size: 2.2rem; }
+      .predict-card { padding: 1.25rem; }
+      .stat-pills { gap: .5rem; }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ══════════════════════════════════════
+       NAVBAR
+  ══════════════════════════════════════ -->
+  <nav class="navbar navbar-expand-lg">
+    <div class="container">
+      <a class="navbar-brand" href="/">
+        <span class="brand-dot"></span>
+        TRUTHLENS
+      </a>
+
+      <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+        <i class="bi bi-list text-white fs-4"></i>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navMenu">
+        <ul class="navbar-nav ms-auto align-items-lg-center gap-1">
+          <li class="nav-item">
+            <a class="nav-link active" href="/"><i class="bi bi-search me-1"></i>Detector</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/dashboard"><i class="bi bi-bar-chart-line me-1"></i>Dashboard</a>
+          </li>
+          <li class="nav-item ms-lg-2">
+            <span class="nav-badge">
+              <i class="bi bi-cpu me-1"></i>
+              {{ best_model_name if best_model_name != 'N/A' else 'Model Not Loaded' }}
+            </span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════════
+       HERO
+  ══════════════════════════════════════ -->
+  <section class="hero">
+    <div class="hero-glow"></div>
+    <div class="container position-relative">
+      <p class="hero-eyebrow"><i class="bi bi-shield-exclamation"></i> AI-Powered Media Verification</p>
+      <h1>DETECT <span>FAKE</span><br>NEWS INSTANTLY</h1>
+      <p class="hero-sub">
+        Paste any news article or headline below. Our NLP model analyses
+        linguistic patterns, sentiment, and writing style to classify it in milliseconds.
+      </p>
+
+      <!-- Stat pills (model metrics) -->
+      <div class="stat-pills">
+        {% if metrics %}
+          {% for m in metrics %}
+          <div class="stat-pill">
+            <span>{{ m.model }}</span>
+            <span class="pill-val pill-green">{{ m.accuracy }}%</span>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="stat-pill">
+            <span>Status</span>
+            <span class="pill-val pill-amber">Train model first</span>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       MAIN CONTENT
+  ══════════════════════════════════════ -->
+  <main class="container pb-5">
+    <div class="row g-4">
+
+      <!-- LEFT: Prediction Form -->
+      <div class="col-lg-7">
+
+        {% if not model_ready %}
+        <!-- Model not loaded warning -->
+        <div class="model-warning mb-3">
+          <div class="d-flex align-items-start gap-2">
+            <i class="bi bi-exclamation-triangle-fill fs-5 mt-1"></i>
+            <div>
+              <strong>Model Not Loaded</strong><br>
+              Run <code>python train.py</code> in your terminal to train and save the model,
+              then restart <code>python app.py</code>.
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if error %}
+        <!-- Error alert -->
+        <div class="alert-custom mb-3" role="alert">
+          <i class="bi bi-exclamation-circle-fill flex-shrink-0 mt-1"></i>
+          <span>{{ error }}</span>
+        </div>
+        {% endif %}
+
+        <!-- Result panel -->
+        {% if result %}
+        <div class="result-panel {{ 'fake' if result.prediction == 'FAKE' else 'real' }} mb-3">
+          <div class="d-flex align-items-center gap-3 mb-3">
+            <span class="result-icon">
+              {% if result.prediction == 'FAKE' %}⚠️{% else %}✅{% endif %}
+            </span>
+            <div>
+              <div class="result-verdict">{{ result.prediction }} NEWS</div>
+              <div class="text-muted" style="font-size:.85rem;">
+                Confidence: <strong>{{ result.confidence }}%</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Confidence bar -->
+          <div class="confidence-bar-wrap">
+            <div class="confidence-bar" id="confBar"
+                 style="width: 0%"
+                 data-width="{{ result.confidence }}"></div>
+          </div>
+
+          <!-- Meta -->
+          <div class="result-meta d-flex flex-wrap gap-2 mt-3">
+            <span><i class="bi bi-cpu me-1"></i>{{ result.model_used }}</span>
+            <span><i class="bi bi-clock me-1"></i>{{ result.timestamp }}</span>
+            <span><i class="bi bi-speedometer2 me-1"></i>{{ result.confidence }}% confident</span>
+          </div>
+
+          {% if result.prediction == 'FAKE' %}
+          <div class="mt-3 p-3 rounded" style="background:rgba(232,57,77,.07);border:1px solid rgba(232,57,77,.2);font-size:.85rem;">
+            <i class="bi bi-info-circle me-2 text-danger"></i>
+            This article exhibits patterns common in misinformation. Cross-check with
+            trusted sources before sharing.
+          </div>
+          {% else %}
+          <div class="mt-3 p-3 rounded" style="background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.2);font-size:.85rem;">
+            <i class="bi bi-check2-circle me-2 text-success"></i>
+            This article appears to be from a credible source. Always verify with multiple outlets.
+          </div>
+          {% endif %}
+          {% if result.verification_articles %}
+
+<div class="mt-3 p-3 rounded"
+     style="background:rgba(59,130,246,.08);
+            border:1px solid rgba(59,130,246,.25);">
+
+  <h5>Trusted Source Verification</h5>
+
+  <p>Found {{ result.verification_count }} matching articles.</p>
+
+  {% for article in result.verification_articles %}
+<div style="margin-bottom:15px;">
+    <strong>{{ article.source }}</strong><br>
+
+    <a href="{{ article.url }}"
+       target="_blank"
+       style="color:#60a5fa;text-decoration:none;">
+       {{ article.title }}
+    </a>
+</div>
+{% endfor %} 
+
+</div>
+
+{% endif %}
+
+
+
+        </div>
+        {% endif %}
+
+        <!-- Prediction form -->
+        <div class="predict-card">
+          <p class="card-label">
+            <i class="bi bi-newspaper"></i>
+            Paste News Article or Headline
+          </p>
+
+          <form action="/predict" method="POST" id="predictForm">
+            <textarea
+              class="news-textarea"
+              name="news_text"
+              id="newsTextarea"
+              placeholder="Paste a news article, headline, or any news content here…&#10;&#10;Example: 'Scientists have discovered a new species of bird in the Amazon rainforest that can mimic human speech with remarkable accuracy…'"
+              maxlength="10000"
+            >{{ news_text if news_text else '' }}</textarea>
+            <div class="char-counter" id="charCounter">0 / 10,000 characters</div>
+
+            <div class="d-flex align-items-center gap-3 mt-3">
+              <button type="submit" class="btn-analyze" id="submitBtn"
+                      {% if not model_ready %}disabled{% endif %}>
+                <span class="spinner" id="spinner"></span>
+                <i class="bi bi-radar" id="btnIcon"></i>
+                ANALYSE NEWS
+              </button>
+
+              {% if news_text %}
+              <button type="button" class="btn btn-sm" id="clearBtn"
+                      style="background:transparent;border:1px solid var(--border);color:var(--text-muted);border-radius:6px;padding:.45rem 1rem;">
+                <i class="bi bi-x-lg me-1"></i>Clear
+              </button>
+              {% endif %}
+            </div>
+          </form>
+        </div><!-- /predict-card -->
+
+        <!-- History table -->
+        {% if history %}
+        <div class="history-section">
+          <h3 class="history-title">
+            <i class="bi bi-clock-history" style="color:var(--accent-blue)"></i>
+            Recent Predictions
+          </h3>
+          <div class="table-responsive">
+            <table class="history-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Snippet</th>
+                  <th>Result</th>
+                  <th>Confidence</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in history %}
+                <tr>
+                  <td><span style="font-family:var(--font-mono);color:var(--text-muted);font-size:.75rem;">#{{ item.id }}</span></td>
+                  <td><div class="snippet-text" title="{{ item.snippet }}">{{ item.snippet }}</div></td>
+                  <td>
+                    {% if item.prediction == 'FAKE' %}
+                    <span class="badge-fake">FAKE</span>
+                    {% else %}
+                    <span class="badge-real">REAL</span>
+                    {% endif %}
+                  </td>
+                  <td><span class="conf-val">{{ item.confidence }}%</span></td>
+                  <td style="color:var(--text-muted);font-size:.75rem;white-space:nowrap;">{{ item.timestamp }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
+
+      </div><!-- /col-lg-7 -->
+
+      <!-- RIGHT: Sidebar -->
+      <div class="col-lg-5">
+
+        <!-- Model comparison card -->
+        <div class="side-card">
+          <p class="side-card-title">
+            <i class="bi bi-trophy"></i>
+            Model Comparison
+          </p>
+          {% if metrics %}
+          <table class="metrics-table">
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>Acc%</th>
+                <th>P%</th>
+                <th>R%</th>
+                <th>F1%</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for m in metrics %}
+              <tr>
+                <td>
+                  {{ m.model }}
+                  {% if m.model == best_model_name %}
+                  <span class="badge-best">BEST</span>
+                  {% endif %}
+                </td>
+                <td>{{ m.accuracy }}</td>
+                <td>{{ m.precision }}</td>
+                <td>{{ m.recall }}</td>
+                <td>{{ m.f1 }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <p style="color:var(--text-muted);font-size:.85rem;">
+            <i class="bi bi-info-circle me-2"></i>
+            Run <code style="color:var(--accent-amber)">python train.py</code> to populate model metrics.
+          </p>
+          {% endif %}
+        </div>
+
+        <!-- How it works -->
+        <div class="side-card">
+          <p class="side-card-title"><i class="bi bi-diagram-3"></i>Pipeline</p>
+          <div style="font-size:.84rem;">
+            {% set steps = [
+              ('1', 'bi-text-paragraph', 'Text Input', 'Raw article or headline is received.'),
+              ('2', 'bi-tools', 'NLP Preprocessing', 'Tokenisation, stopword removal, lemmatisation.'),
+              ('3', 'bi-grid-3x3', 'TF-IDF Vectorisation', 'Converts text to 50k-feature numerical matrix.'),
+              ('4', 'bi-cpu', 'ML Classification', best_model_name + ' predicts FAKE or REAL.'),
+              ('5', 'bi-bar-chart', 'Confidence Score', 'Decision function → probability estimate.'),
+            ] %}
+            {% for num, icon, title, desc in steps %}
+            <div class="d-flex gap-3 mb-2" style="{% if not loop.last %}padding-bottom:.75rem;border-bottom:1px solid var(--border);{% endif %}">
+              <div style="min-width:28px;height:28px;background:rgba(232,57,77,.12);border:1px solid rgba(232,57,77,.25);border-radius:6px;display:flex;align-items:center;justify-content:center;">
+                <i class="bi {{ icon }}" style="color:var(--accent-red);font-size:.85rem;"></i>
+              </div>
+              <div>
+                <div style="font-weight:600;font-size:.82rem;">{{ title }}</div>
+                <div style="color:var(--text-muted);font-size:.78rem;">{{ desc }}</div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Tips card -->
+        <div class="side-card">
+          <p class="side-card-title"><i class="bi bi-lightbulb"></i>Tips for Best Results</p>
+          <ul style="list-style:none;padding:0;margin:0;font-size:.84rem;color:var(--text-muted);">
+            <li class="mb-2"><i class="bi bi-check2 text-success me-2"></i>Paste complete articles (not just titles)</li>
+            <li class="mb-2"><i class="bi bi-check2 text-success me-2"></i>Include at least 2–3 sentences</li>
+            <li class="mb-2"><i class="bi bi-check2 text-success me-2"></i>English text works best</li>
+            <li class="mb-2"><i class="bi bi-check2 text-success me-2"></i>Confidence &gt; 85% = high certainty</li>
+            <li class="mb-0"><i class="bi bi-info-circle text-primary me-2"></i>Always cross-verify with trusted sources</li>
+          </ul>
+        </div>
+
+      </div><!-- /col-lg-5 -->
+    </div><!-- /row -->
+
+    <!-- ══════════════════════════════════════
+         HOW IT WORKS — STEPS
+    ══════════════════════════════════════ -->
+    <div class="how-section mt-5">
+      <h2 class="section-title">HOW IT WORKS</h2>
+      <div class="row g-3">
+        {% set how_steps = [
+          ('01', 'bi-newspaper', 'Collect', 'Dataset of 44,000+ real and fake articles from Kaggle is used for training.'),
+          ('02', 'bi-magic', 'Preprocess', 'NLP pipeline: lowercase, punctuation removal, stopwords, lemmatisation.'),
+          ('03', 'bi-grid-3x3-gap', 'Vectorise', 'TF-IDF with unigrams + bigrams creates a 50,000-feature numerical matrix.'),
+          ('04', 'bi-robot', 'Train', 'Three models trained: Logistic Regression, SVM, Naive Bayes. Best selected by F1.'),
+          ('05', 'bi-lightning-charge', 'Predict', 'Your input is preprocessed and vectorised, then scored by the best model.'),
+        ] %}
+        {% for num, icon, title, desc in how_steps %}
+        <div class="col-6 col-md-4 col-lg">
+          <div class="step-card">
+            <div class="step-num">{{ num }}</div>
+            <div class="step-icon"><i class="bi {{ icon }}" style="color:var(--accent-blue)"></i></div>
+            <div class="step-title">{{ title }}</div>
+            <div class="step-desc">{{ desc }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ══════════════════════════════════════
+       FOOTER
+  ══════════════════════════════════════ -->
+  <footer>
+    <div class="container">
+      <p>
+        <strong>TruthLens</strong> — Fake News Detection System &nbsp;|&nbsp;
+        Built with Python, Flask, Scikit-learn &amp; Bootstrap 5 &nbsp;|&nbsp;
+        <a href="/dashboard"><i class="bi bi-bar-chart-line me-1"></i>Open Dashboard</a>
+      </p>
+      <p class="mt-1" style="font-size:.76rem;">
+        For educational &amp; research use. Always verify news with authoritative sources.
+      </p>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // ── Confidence bar animation ──
+    document.addEventListener("DOMContentLoaded", () => {
+      const bar = document.getElementById("confBar");
+      if (bar) {
+        const target = parseFloat(bar.dataset.width) || 0;
+        setTimeout(() => { bar.style.width = target + "%"; }, 150);
+      }
+
+      // ── Character counter ──
+      const ta  = document.getElementById("newsTextarea");
+      const ctr = document.getElementById("charCounter");
+      const MAX = 10000;
+
+      function updateCounter() {
+        const len = ta.value.length;
+        ctr.textContent = len.toLocaleString() + " / " + MAX.toLocaleString() + " characters";
+        ctr.className = "char-counter";
+        if (len > MAX * 0.9) ctr.classList.add("warn");
+        if (len >= MAX)      ctr.classList.add("over");
+      }
+
+      if (ta) {
+        ta.addEventListener("input", updateCounter);
+        updateCounter();   // initialise
+      }
+
+      // ── Spinner on submit ──
+      const form    = document.getElementById("predictForm");
+      const spinner = document.getElementById("spinner");
+      const btnIcon = document.getElementById("btnIcon");
+      const submitBtn = document.getElementById("submitBtn");
+
+      if (form) {
+        form.addEventListener("submit", (e) => {
+          const text = ta ? ta.value.trim() : "";
+          if (text.length < 50) return;   // validation handled server-side too
+          if (spinner) spinner.style.display = "block";
+          if (btnIcon) btnIcon.style.display = "none";
+          if (submitBtn) submitBtn.disabled = true;
+        });
+      }
+
+      // ── Clear button ──
+      const clearBtn = document.getElementById("clearBtn");
+      if (clearBtn && ta) {
+        clearBtn.addEventListener("click", () => {
+          ta.value = "";
+          updateCounter();
+          ta.focus();
+        });
+      }
+    });
+  </script>
+</body>
+</html>
